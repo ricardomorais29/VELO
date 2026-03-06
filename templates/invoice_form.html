@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}New Invoice — Velo{% endblock %}
+{% block page_title %}New Invoice{% endblock %}
+{% block topbar_actions %}<a href="{{ url_for('invoices') }}" class="btn btn-outline">← Back</a>{% endblock %}
+{% block content %}
+<div class="form-card">
+  <form method="post">
+    <div class="form-group">
+      <label>Client</label>
+      <select name="client_id" required>
+        <option value="">Select a client</option>
+        {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+      {% if not clients %}<p style="color:var(--red);font-size:.8rem;margin-top:5px">No clients yet. <a href="{{ url_for('add_client') }}" style="color:var(--red)">Add one</a></p>{% endif %}
+    </div>
+    <div class="form-group"><label>Due Date</label><input type="date" name="due_date"></div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" placeholder="Payment terms, details..."></textarea></div>
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary" {% if not clients %}disabled{% endif %}>Create Invoice</button>
+      <a href="{{ url_for('invoices') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

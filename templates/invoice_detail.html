@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_num }} — Velo{% endblock %}
+{% block page_title %}<span class="mono">{{ invoice.invoice_num }}</span>{% endblock %}
+{% block topbar_actions %}
+  <a href="{{ url_for('invoices') }}" class="btn btn-outline">← Back</a>
+  <a href="{{ url_for('generate_pdf',invoice_id=invoice.id) }}" class="btn btn-outline">↓ PDF</a>
+  {% if invoice.status=='Unpaid' %}
+    <form action="{{ url_for('mark_paid',invoice_id=invoice.id) }}" method="post" style="display:inline">
+      <button class="btn btn-green">✓ Mark Paid</button>
+    </form>
+  {% else %}
+    <form action="{{ url_for('mark_unpaid',invoice_id=invoice.id) }}" method="post" style="display:inline">
+      <button class="btn btn-outline">↩ Mark Unpaid</button>
+    </form>
+  {% endif %}
+  <form action="{{ url_for('delete_invoice',invoice_id=invoice.id) }}" method="post" style="display:inline" onsubmit="return confirm('Delete?')">
+    <button class="btn btn-danger">Delete</button>
+  </form>
+{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div>
+    <div class="table-card" style="margin-bottom:20px">
+      <div class="table-header"><h3>Line Items</h3><span class="badge badge-{{ invoice.status|lower }}">{{ invoice.status }}</span></div>
+      <table>
+        <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.description }}</td><td>{{ item.quantity|int }}</td>
+            <td>&#8364;{{ "%.2f"|format(item.price) }}</td><td>&#8364;{{ "%.2f"|format(item.line_total) }}</td>
+            <td><form action="{{ url_for('delete_item',invoice_id=invoice.id,item_id=item.id) }}" method="post" onsubmit="return confirm('Remove?')"><button class="btn btn-danger btn-sm">✕</button></form></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" style="text-align:center;color:var(--ink3);padding:28px;font-size:.85rem">No items yet — add one below.</td></tr>
+          {% endfor %}
+          {% if items %}
+          <tr class="total-row"><td colspan="3" style="text-align:right">Total</td><td>&#8364;{{ "%.2f"|format(invoice.total_amount) }}</td><td></td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-card">
+      <h4 style="font-size:.9rem;font-weight:600;margin-bottom:16px">Add Line Item</h4>
+      <form method="post" action="{{ url_for('add_item',invoice_id=invoice.id) }}">
+        <div class="form-group"><label>Description</label><input type="text" name="description" required placeholder="e.g. Design work — 3 hours"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Quantity</label><input type="number" name="quantity" min="1" step="1" value="1" required></div>
+          <div class="form-group"><label>Unit Price ($)</label><input type="number" name="price" min="0" step="0.01" required placeholder="0.00"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">+ Add Item</button>
+      </form>
+    </div>
+    <div class="email-panel">
+      <h4>Send Invoice by Email</h4>
+      <p style="font-size:.82rem;color:var(--ink3);margin-bottom:12px">PDF attached automatically. Send to any address.</p>
+      <form method="post" action="{{ url_for('send_email',invoice_id=invoice.id) }}">
+        <div class="email-row">
+          <input type="email" name="to_email" placeholder="recipient@example.com" value="{{ invoice.client_email }}" required>
+          <button type="submit" class="btn btn-primary">Send ↗</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div>
+    <div class="detail-meta">
+      <h4 style="font-size:.88rem;font-weight:600;margin-bottom:14px">Invoice Details</h4>
+      <div class="meta-row"><span class="meta-key">Number</span><span class="meta-val mono" style="font-size:.82rem">{{ invoice.invoice_num }}</span></div>
+      <div class="meta-row"><span class="meta-key">Status</span><span class="badge badge-{{ invoice.status|lower }}">{{ invoice.status }}</span></div>
+      <div class="meta-row"><span class="meta-key">Created</span><span class="meta-val">{{ invoice.date }}</span></div>
+      <div class="meta-row"><span class="meta-key">Due</span><span class="meta-val">{{ invoice.due_date or '—' }}</span></div>
+      <div class="meta-row"><span class="meta-key">Total</span><span class="meta-val" style="font-size:1rem">&#8364;{{ "%.2f"|format(invoice.total_amount) }}</span></div>
+    </div>
+    <div class="detail-meta" style="margin-top:16px">
+      <h4 style="font-size:.88rem;font-weight:600;margin-bottom:14px">Bill To</h4>
+      <div class="meta-row"><span class="meta-key">Name</span><span class="meta-val">{{ invoice.client_name }}</span></div>
+      <div class="meta-row"><span class="meta-key">Email</span><span class="meta-val" style="font-size:.82rem">{{ invoice.client_email }}</span></div>
+      {% if invoice.client_phone %}<div class="meta-row"><span class="meta-key">Phone</span><span class="meta-val">{{ invoice.client_phone }}</span></div>{% endif %}
+    </div>
+    {% if invoice.notes %}
+    <div class="detail-meta" style="margin-top:16px">
+      <h4 style="font-size:.88rem;font-weight:600;margin-bottom:10px">Notes</h4>
+      <p style="font-size:.84rem;color:var(--ink2);line-height:1.6">{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
